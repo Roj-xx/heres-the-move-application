@@ -16,6 +16,13 @@ dependencies:
   # Declarative routing.
   go_router: ^18.0.2
 
+  # Firebase backend. Initialised in main(); no feature code touches the SDKs.
+  firebase_core: ^4.15.0
+  cloud_firestore: ^6.10.0
+  # Present so App Check is ready to activate. Deliberately not called yet;
+  # enforcement stays off until the providers are registered in the console.
+  firebase_app_check: ^0.4.8
+
   # Date/number formatting for cycle, mission and streak surfaces.
   intl: ^0.20.3
 

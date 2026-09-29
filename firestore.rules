@@ -1,0 +1,102 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================================
+    // SAFETY NET — deny by default
+    // =========================================================================
+    // This catch-all is the most important rule in the file. Firestore Security
+    // Rules are not filters: a request is rejected outright unless some `allow`
+    // evaluates to true. Anything not explicitly matched by a rule below is
+    // therefore denied here.
+    //
+    // Keep this rule in place for the lifetime of the project. Removing it, or
+    // moving it below a broader rule, silently exposes any collection that
+    // nobody thought to write a rule for.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // MILESTONE 2 — the app has no authenticated users yet
+    // =========================================================================
+    // Authentication arrives in Milestone 3. Until then `request.auth` is null
+    // for every client, so there is no legitimate caller for any user-owned
+    // data. Every path below is denied explicitly, even though the safety net
+    // would already catch it.
+    //
+    // The duplication is deliberate: these blocks document the intended shape
+    // of the V1 data model, and make the flip to "owner-only" in Milestone 3 a
+    // local, reviewable edit per block rather than an act of creation. A test
+    // asserts every one of these stays closed until then.
+
+    // -- User-owned data ----------------------------------------------------
+    // Intended: private to the owning user.
+    // Later:    allow read, write: if request.auth != null
+    //                            && request.auth.uid == userId;
+    match /users/{userId} {
+      allow read, write: if false;
+    }
+
+    // users/{userId}/partner/profile
+    // users/{userId}/partner/preferences
+    match /users/{userId}/partner/{document=**} {
+      allow read, write: if false;
+    }
+
+    // users/{userId}/cycle/profile
+    match /users/{userId}/cycle/profile {
+      allow read, write: if false;
+    }
+
+    // users/{userId}/cycle/periods/{periodId}
+    match /users/{userId}/cycle/periods/{periodId} {
+      allow read, write: if false;
+    }
+
+    // users/{userId}/moveCompletions/{completionId}
+    match /users/{userId}/moveCompletions/{completionId} {
+      allow read, write: if false;
+    }
+
+    // users/{userId}/missions/{userMissionId}
+    match /users/{userId}/missions/{userMissionId} {
+      allow read, write: if false;
+    }
+
+    // -- Global content -----------------------------------------------------
+    // Shared, not user-owned. These collections are seeded and curated
+    // server-side by trusted code (Cloud Functions / the Admin SDK), which
+    // bypasses Security Rules entirely.
+    //
+    // Clients may eventually read these, but must never write them — a
+    // malicious or buggy client must not be able to invent moves or missions
+    // for other users. The read condition is left closed until Milestone 3
+    // decides what, if anything, is safe to serve before sign-in.
+
+    // moves/{moveId}
+    match /moves/{moveId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // missions/{missionId}
+    match /missions/{missionId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // messageSuggestions/{messageId}
+    match /messageSuggestions/{messageId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // appConfig/{configId}
+    match /appConfig/{configId} {
+      allow read: if false;
+      allow write: if false;
+    }
+  }
+}

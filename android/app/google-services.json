@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1048485800134",
+    "project_id": "heres-the-move",
+    "storage_bucket": "heres-the-move.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1048485800134:android:a412675e2fe239ed3b4fc7",
+        "android_client_info": {
+          "package_name": "com.roj.heres_the_move"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWFvZsiDmtJ3tTnf4z4C1zEDX9r0RkwCk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

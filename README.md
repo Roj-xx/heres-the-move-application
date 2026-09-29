@@ -41,11 +41,108 @@ Conventions worth keeping:
 | --- | --- | --- |
 | 0 | Flutter project initialisation | Done |
 | 1 | Application foundation | Done |
-| 2+ | Auth, onboarding, cycle, moves, missions, profile | Not started |
+| 2 | Firebase foundation | In progress — see [Firebase](#firebase) |
+| 3+ | Auth, onboarding, cycle, moves, missions, profile | Not started |
 
 **Milestone 1 is a foundation only.** There is no authentication, no Firebase,
 no cycle tracking, no moves and no partner data yet. The app launches into an
 intentionally minimal shell that exists to prove the design system works.
+
+**Milestone 2 adds infrastructure, not features.** Firebase is initialised and
+Firestore rules are deployed, but there is still no sign-in, no user data and no
+product UI. The visible app is unchanged from Milestone 1.
+
+---
+
+## Firebase
+
+### What exists
+
+| Piece | State |
+| --- | --- |
+| Firebase project | `heres-the-move` (number `1048485800134`) |
+| Android Firebase app | `com.roj.heres_the_move` |
+| iOS Firebase app | `com.roj.heresTheMove` |
+| Cloud Firestore API | Enabled |
+| `firestore.rules` | Deployed, deny by default |
+| `firestore.indexes.json` | Deployed (empty — no collection queries exist yet) |
+| Default database | **Not created** — needs billing enabled (see below) |
+| App Check | Dependency present, providers unregistered, enforcement **off** |
+
+### Architecture
+
+```text
+main()
+  └─ FirebaseBootstrap.initialize()   ← once, before any widget exists
+  └─ runApp(ProviderScope(child: HereIsTheMoveApp()))
+       └─ MaterialApp.router
+```
+
+`FirebaseBootstrap` (in `lib/core/firebase/`) owns initialisation. It runs
+before `runApp`, so no provider or screen can observe a half-initialised
+backend. It is idempotent, and it never swallows a failure: a broken backend
+raises an `AppException` whose `message` is user-safe and whose `cause` keeps
+the real error for logs.
+
+`firestoreProvider` (in `lib/core/firebase/firebase_providers.dart`) is the only
+way to reach `FirebaseFirestore.instance`. Widgets must not call it directly;
+later milestones inject it into repositories, which makes those repositories
+testable with a fake.
+
+### Regenerating configuration
+
+```sh
+flutterfire configure --project=heres-the-move \
+  --platforms=android,ios \
+  --android-package-name=com.roj.heres_the_move \
+  --ios-bundle-id=com.roj.heresTheMove
+```
+
+### Security posture
+
+`firestore.rules` is `rules_version = '2'` and **deny by default**. A root
+`match /{document=**} { allow read, write: if false; }` catch-all backstops
+every path, and each V1 collection is additionally declared with an explicit
+`if false` so Milestone 3 only has to flip a condition rather than invent
+structure. `test/firebase_test.dart` asserts this posture and fails the build if
+any rule is loosened.
+
+Global content (`moves`, `missions`, `messageSuggestions`, `appConfig`) is
+intended to stay read-only for clients and is written only by trusted server
+code, which bypasses Security Rules.
+
+### Outstanding manual steps
+
+These require the Firebase console or a billing account and **have not been
+done**:
+
+1. **Enable billing** on `heres-the-move`, then create the default database in
+   `asia-southeast2` (Singapore). The API is enabled and the rules are
+   deployed, but `firestore:databases:create` is refused with
+   `requires billing to be enabled`. Nothing reads or writes Firestore until
+   this is done.
+2. **Register the App Check providers** in the console: Play Integrity for
+   Android, DeviceCheck (or App Attest) for iOS. Enforce on neither until
+   Milestone 3 — enforcement is currently off, so no debug token is needed and
+   no build is locked out.
+3. **On macOS**, add `ios/Runner/GoogleService-Info.plist` to the Runner target
+   in Xcode. Core Firebase does not need it, because initialisation reads
+   `DefaultFirebaseOptions` in Dart, but native features (App Check,
+   Crashlytics) expect it in the app bundle. The file is committed and correct;
+   it is simply not yet a build resource.
+4. **Run a real `flutter build ios`** on macOS. This milestone was developed on
+   Windows, so iOS is verified statically only.
+
+### Emulator
+
+The Firestore emulator needs a JDK, which this machine does not have, so rules
+are validated by deploying them to the real project (the server accepted them)
+and by static assertions in `test/firebase_test.dart`. To validate against a
+local emulator later, install a JDK and run:
+
+```sh
+firebase emulators:start --only firestore
+```
 
 ---
 
@@ -153,6 +250,12 @@ offline, in tests and on first launch.
 app root, routing, both themes, token values, WCAG contrast floors, the
 reusable primitives, and the shell at phone, tablet, short-screen and
 large-text sizes.
+
+`test/firebase_test.dart` additionally pins the Firebase wiring: that the
+generated options point at `heres-the-move` with the settled Android and iOS
+identifiers, that unsupported platforms refuse to start, that a backend failure
+becomes a user-safe `AppException`, and that the deployed security rules stay
+deny-by-default.
 
 ```sh
 flutter test
