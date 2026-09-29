@@ -9,6 +9,32 @@ Native Android and iOS. No web target.
 
 ---
 
+## App identifiers
+
+These are settled. Changing them after a store submission means a new app in the
+store, so treat them as fixed.
+
+| Platform | Identifier | Source of truth |
+| --- | --- | --- |
+| Android | `com.roj.heres_the_move` | `android/app/build.gradle.kts` (`namespace` + `applicationId`) |
+| iOS | `com.roj.heresTheMove` | `ios/Runner.xcodeproj` (`PRODUCT_BUNDLE_IDENTIFIER`) |
+
+Conventions worth keeping:
+
+- Android uses an underscore because Java package segments cannot contain a
+  hyphen. iOS has no such restriction, so it uses the camel-case form.
+- The Kotlin `MainActivity` lives at
+  `android/app/src/main/kotlin/com/roj/heres_the_move/` and its `package`
+  declaration must match the Gradle `namespace`.
+- The iOS test bundle is `com.roj.heresTheMove.RunnerTests`.
+- The user-facing name lives only in the platform config —
+  `android:label` and `CFBundleDisplayName` are both `Here’s the Move`. Do not
+  hardcode it in Dart.
+- Release signing is not configured. The release build type still uses the
+  debug key, and no keystore belongs in the repository.
+
+---
+
 ## Status
 
 | Milestone | Scope | State |
